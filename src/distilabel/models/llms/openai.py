@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import inspect
 import io
 import os
 from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple, Union
@@ -242,6 +242,7 @@ class OpenAILLM(AsyncLLM):
         presence_penalty: float = 0.0,
         temperature: float = 1.0,
         top_p: float = 1.0,
+        skip_special_tokens: bool = True,
         stop: Optional[Union[str, List[str]]] = None,
         response_format: Optional[Dict[str, str]] = None,
     ) -> GenerateOutput:
@@ -263,6 +264,7 @@ class OpenAILLM(AsyncLLM):
                 `0.0`.
             temperature: the temperature to use for the generation. Defaults to `0.1`.
             top_p: the top-p value to use for the generation. Defaults to `1.0`.
+            skip_special_tokens: Whether to skip special tokens in the output. Defaults to `True`.
             stop: a string or a list of strings to use as a stop sequence for the generation.
                 Defaults to `None`.
             response_format: the format of the response to return. Must be one of
@@ -301,6 +303,7 @@ class OpenAILLM(AsyncLLM):
             "presence_penalty": presence_penalty,
             "temperature": temperature,
             "top_p": top_p,
+            "skip_special_tokens": skip_special_tokens,
             "stop": stop,
         }
         # Check if it's a vision generation task, in that case "stop" cannot be used or raises
@@ -315,6 +318,12 @@ class OpenAILLM(AsyncLLM):
 
         if structured_output:
             kwargs = self._prepare_kwargs(kwargs, structured_output)  # type: ignore
+
+        # check the signature of the client to see if it supports skip_special_tokens as a kwarg
+        # not officially supported by openai's Python client, but forked versions may support it for vllm
+        res = inspect.signature(self._aclient.chat.completions.create)
+        if res.parameters.get("skip_special_tokens") is None:
+            kwargs.pop("skip_special_tokens")
 
         completion = await self._aclient.chat.completions.create(**kwargs)  # type: ignore
 
