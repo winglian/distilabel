@@ -337,11 +337,13 @@ class OpenAILLM(AsyncLLM):
                 output_logprobs = [choice_logprobs]
             else:
                 output_logprobs = None
+            prompt_logprobs = self._get_logprobs_from_prompt(completion.prompt_logprobs)
             return prepare_output(
                 generations=[completion.model_dump_json()],
                 input_tokens=statistics["input_tokens"],
                 output_tokens=statistics["output_tokens"],
                 logprobs=output_logprobs,
+                prompt_logprobs=prompt_logprobs,
             )
 
         return self._generations_from_openai_completion(completion)
@@ -368,6 +370,7 @@ class OpenAILLM(AsyncLLM):
             generations.append(content)
             if choice_logprobs := self._get_logprobs_from_choice(choice):
                 logprobs.append(choice_logprobs)
+        prompt_logprobs = self._get_logprobs_from_prompt(completion.prompt_logprobs)
 
         statistics = self._get_llm_statistics(completion)
         return prepare_output(
@@ -375,6 +378,7 @@ class OpenAILLM(AsyncLLM):
             input_tokens=statistics["input_tokens"],
             output_tokens=statistics["output_tokens"],
             logprobs=logprobs,
+            prompt_logprobs=prompt_logprobs,
         )
 
     def _get_logprobs_from_choice(
@@ -389,6 +393,17 @@ class OpenAILLM(AsyncLLM):
                 for top_logprob in token_logprobs.top_logprobs
             ]
             for token_logprobs in choice.logprobs.content
+        ]
+
+    def _get_prompt_logprobs(
+            self, prompt_logprobs: "OpenAILogprobs"
+    ) -> Union[List[List["Logprob"]], None]:
+        return [
+            [
+                {"token": f"token_id:{top_logprob_id}", "logprob": top_logprob_data.logprob}
+                for top_logprob_id, top_logprob_data in token_logprobs.items()
+            ]
+            for token_logprobs in prompt_logprobs if token_logprobs is not None
         ]
 
     def offline_batch_generate(

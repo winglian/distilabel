@@ -43,6 +43,7 @@ def prepare_output(
     input_tokens: Optional[List[int]] = None,
     output_tokens: Optional[List[int]] = None,
     logprobs: Optional["LLMLogprobs"] = None,
+    prompt_logprobs: Optional["LLMLogprobs"] = None,
 ) -> "GenerateOutput":
     """Helper function to prepare the output of the LLM.
 
@@ -63,4 +64,6 @@ def prepare_output(
     }
     if logprobs:
         output["logprobs"] = logprobs
+    if prompt_logprobs:
+        output["prompt_logprobs"] = prompt_logprobs
     return output

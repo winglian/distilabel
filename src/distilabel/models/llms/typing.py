@@ -49,6 +49,7 @@ class GenerateOutput(TypedDict):
     generations: LLMOutput
     statistics: LLMStatistics
     logprobs: NotRequired[LLMLogprobs]
+    prompt_logprobs: NotRequired[LLMLogprobs]
 
 
 if TYPE_CHECKING:
